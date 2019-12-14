@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import time
-
+from typing import List
 
 class ConnectFour:
     ROWS = 6
@@ -40,7 +40,7 @@ class ConnectFour:
         ],
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
         self.free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
 
@@ -48,7 +48,7 @@ class ConnectFour:
         self.game_over = False
         self.pieces_count = 0
 
-    def make_move(self, column):
+    def make_move(self, column: int) -> None:
         free_row_index = self.free_row_indices[column]
         self.current_board[free_row_index, column] = 1
 
@@ -64,7 +64,7 @@ class ConnectFour:
         if self.pieces_count == self.ROWS * self.COLUMNS:
             self.game_over = True
 
-    def is_winning_move(self, column):
+    def is_winning_move(self, column: int) -> bool:
         row = self.free_row_indices[column]
 
         for win_conditions in self.WINNING_CONDITIONS:
@@ -92,7 +92,7 @@ class ConnectFour:
         return False
 
     @property
-    def current_board(self):
+    def current_board(self) -> np.ndarray:
         return self.board[int(self.turn)]
 
     @property
@@ -103,7 +103,7 @@ class ConnectFour:
         random_move = random.choice(self.legal_moves)
         self.make_move(random_move)
 
-    def print_board(self):
+    def print_board(self) -> None:
         output_repr = f"Turn: {self.turn}\n"
 
         for i in range(self.ROWS):
@@ -120,7 +120,7 @@ class ConnectFour:
         print(output_repr)
 
 
-def main():
+def main() -> None:
     times = []
 
     for i in range(1000):
