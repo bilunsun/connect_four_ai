@@ -96,7 +96,7 @@ class ConnectFour:
         return self.board[int(self.turn)]
 
     @property
-    def legal_moves(self):
+    def legal_moves(self) -> List:
         return [i for i in range(self.COLUMNS) if self.free_row_indices[i] >= 0]
 
     def make_random_move(self):
