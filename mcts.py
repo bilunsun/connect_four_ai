@@ -33,20 +33,18 @@ class Node:
     
     @property
     def ucb1(self) -> float:
+        if self.visit_count == 0:
+            return np.inf
+
         return self.mean_action_value + 2 * np.sqrt(np.log(self.parent_node.visit_count) / self.visit_count)
 
     def select_child_node(self) -> "Node":
-        # selected_child_node = sorted(self.child_nodes, 
-        #     key=lambda child_node: child_node.mean_action_value + child_node.upper_confidence)[-1]  # Biggest score
-
         selected_child_node = sorted(self.child_nodes, 
             key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
         return selected_child_node
     
-    def add_child(self, move: int, state: ConnectFour) -> "Node":
-        child_node = Node(move=move, parent_node=self, state=state)
-
-        self.untried_moves.remove(move)
+    def add_child(self, move: int) -> "Node":
+        child_node = Node(move=move, parent_node=self, state=self.state)
         self.child_nodes.append(child_node)
 
         return child_node
@@ -58,65 +56,92 @@ class Node:
 
 
 class MCTS:
+    """
+    Monte Carlo Tree Search algorithm implementation
+    Based on https://www.youtube.com/watch?v=UXW2yZndl7U
+    """
     def __init__(self, root_state: ConnectFour, player: int, itermax: int = 100, timeout_s: float = 1.0):
-        self.root_state = copy.deepcopy(root_state)
         self.root_node = Node(parent_node=None, move=None, state=root_state)
         self.player = player
         self.itermax = itermax
         self.timeout_s = timeout_s
+    
+    def select(self) -> Node:
+        """
+        Get a leaf node by selecting child nodes that maximizes UCB1
+        """
+        current_node = self.root_node
+        
+        while len(current_node.child_nodes) != 0:
+            current_node = current_node.select_child_node()
+        
+        return current_node
+    
+    def expand(self, current_node: Node) -> Node:
+        """
+        Create a child node for each available action/move
+        """
+        current_node.visit_count += 1
+
+        if current_node.visit_count == 1:  # If this is the first time the node is visited, expand
+            for move in current_node.untried_moves:  # For each possible move, create a child node
+                current_node.add_child(move=move)
+            
+            current_node.untried_moves = []  # Clear the untried moves
+            
+            return current_node.child_nodes[0]  # Set the current node to the first child node
+        else:  # Otherwise, proceed to roll-out
+            return current_node
+    
+    def rollout(self, current_node: Node) -> None:
+        """
+        Perform rollout by playing random moves until the game ends
+        """
+        while not current_node.state.game_over:
+            random_move = random.choice(current_node.state.legal_moves)
+            current_node.state.make_move(random_move)
+    
+    def backpropagate(self, current_node: Node) -> None:
+        """
+        Assign a score to the result, then propagate it to all the ancestor nodes
+        """
+        # First get a score
+        if self.player == ConnectFour.WHITE:
+            if current_node.state.winner == "white":
+                final_value = 1
+            elif current_node.state.winner == "black":
+                final_value = -1
+            else:
+                final_value = 0
+        else:
+            if current_node.state.winner == "black":
+                final_value = 1
+            elif current_node.state.winner == "white":
+                final_value = -1
+            else:
+                final_value = 0
+
+        # Then, propagate it to all the ancestors
+        while current_node is not None:
+            current_node.update(action_value=final_value)
+            current_node = current_node.parent_node
 
     def get_best_move(self) -> int:
         iteration_index = 0
         start_time_s = time.time()
 
         while iteration_index < self.itermax and time.time() - start_time_s < self.timeout_s:
-            current_node = self.root_node
-            current_state = copy.deepcopy(self.root_state)
-
             # Select
-            while current_node.child_nodes and not current_node.untried_moves:  # Repeat until node is fully expanded and non-terminal
-                current_node = current_node.select_child_node()  # Select a child based on the PUCT algorithm
-                current_state.make_move(current_node.move)  # Make the move
-
-            # Expand
-            # if current_node.untried_moves:  # If expansion is possible
-            #     current_move = random.choice(current_node.untried_moves)  # Randomly select a move
-            #     current_state.make_move(current_move)
-
-            #     # Create a child node, and update the current_node to be the child node
-            #     current_node = current_node.add_child(move=current_move, state=current_state)
+            leaf_node = self.select()
             
             # Expand
-            if current_node.visit_count == 0:  # If the leaf node has never been visited/calculated before
-                for move in current_node.untried_moves:  # For each possible move, create a child node
-                    current_node.add_child(move=move, state=current_state)
-                
-                current_node = current_node.child_nodes[0]  # Set the current node to the first child node       
-
-            # Rollout / Simulation
-            while not current_state.game_over:
-                random_move = random.choice(current_state.legal_moves)
-                current_state.make_move(random_move)
+            expanded_child_node = self.expand(leaf_node)
+            
+            # Rollout
+            self.rollout(expanded_child_node)
             
             # Backpropagate
-            if self.player == ConnectFour.WHITE:
-                if current_state.winner == "white":
-                    final_value = 1
-                elif current_state.winner == "black":
-                    final_value = -1
-                else:
-                    final_value = 0
-            else:
-                if current_state.winner == "black":
-                    final_value = 1
-                elif current_state.winner == "white":
-                    final_value = -1
-                else:
-                    final_value = 0
-
-            while current_node is not None:
-                current_node.update(action_value=final_value)
-                current_node = current_node.parent_node
+            self.backpropagate(expanded_child_node)
             
             iteration_index += 1
         
@@ -133,15 +158,16 @@ def main():
     }
 
     for i in range(10):
-        print(i)
         sample_state = ConnectFour()
 
         while not sample_state.game_over:
             if sample_state.turn == ConnectFour.WHITE:
-                mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=100)
-                move = mcts.get_best_move()
+                move = random.choice(sample_state.legal_moves)
+                # mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=100)
+                # move = mcts.get_best_move()
             else:
-                mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=1)
+                # move = random.choice(sample_state.legal_moves)
+                mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=100)
                 move = mcts.get_best_move()
 
             sample_state.make_move(move)
