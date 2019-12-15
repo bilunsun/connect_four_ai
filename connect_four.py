@@ -46,6 +46,7 @@ class ConnectFour:
 
         self.turn = self.BLACK
         self.game_over = False
+        self.winner = None
         self.pieces_count = 0
 
     def make_move(self, column: int) -> None:
@@ -54,6 +55,11 @@ class ConnectFour:
 
         if self.is_winning_move(column):
             self.game_over = True
+            
+            if self.turn == self.WHITE:
+                self.winner = "white"
+            else:
+                self.winner = "black"
             return
 
         self.free_row_indices[column] -= 1
@@ -63,6 +69,7 @@ class ConnectFour:
 
         if self.pieces_count == self.ROWS * self.COLUMNS:
             self.game_over = True
+            self.winner = "drawn"
 
     def is_winning_move(self, column: int) -> bool:
         row = self.free_row_indices[column]
@@ -99,7 +106,7 @@ class ConnectFour:
     def legal_moves(self) -> List:
         return [i for i in range(self.COLUMNS) if self.free_row_indices[i] >= 0]
 
-    def make_random_move(self):
+    def make_random_move(self) -> None:
         random_move = random.choice(self.legal_moves)
         self.make_move(random_move)
 
