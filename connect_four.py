@@ -111,7 +111,8 @@ class ConnectFour:
         self.make_move(random_move)
 
     def print_board(self) -> None:
-        output_repr = f"Turn: {self.turn}\n"
+        player = "White" if self.turn else "Black"
+        output_repr = f"Turn: {player}\n"
 
         for i in range(self.ROWS):
             row = ""
@@ -127,7 +128,19 @@ class ConnectFour:
         print(output_repr)
 
 
-def main() -> None:
+def play_sample_game(verbose: bool = False) -> None:
+    game = ConnectFour()
+
+    while not game.game_over:
+        game.make_random_move()
+
+        if verbose:
+            game.print_board()
+    
+    game.print_board()
+
+
+def benchmark(iterations: int = 1000) -> None:
     times = []
 
     for i in range(1000):
@@ -144,6 +157,10 @@ def main() -> None:
     print(f"Average time (s): {sum(times) / len(times)}")
     print(f"Min time(s): {min(times)}")
     print(f"Max time (s): {max(times)}")
+
+
+def main() -> None:
+    play_sample_game(verbose=True)
 
 
 if __name__ == "__main__":

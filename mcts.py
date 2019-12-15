@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import random
+import time
 from typing import List
 
 from connect_four import ConnectFour
@@ -57,14 +58,18 @@ class Node:
 
 
 class MCTS:
-    def __init__(self, root_state: ConnectFour, player: int, itermax: int = 100):
+    def __init__(self, root_state: ConnectFour, player: int, itermax: int = 100, timeout_s: float = 1.0):
         self.root_state = copy.deepcopy(root_state)
         self.root_node = Node(parent_node=None, move=None, state=root_state)
         self.player = player
         self.itermax = itermax
+        self.timeout_s = timeout_s
 
     def get_best_move(self) -> int:
-        for iteration_index in range(self.itermax):
+        iteration_index = 0
+        start_time_s = time.time()
+
+        while iteration_index < self.itermax and time.time() - start_time_s < self.timeout_s:
             current_node = self.root_node
             current_state = copy.deepcopy(self.root_state)
 
@@ -112,6 +117,8 @@ class MCTS:
             while current_node is not None:
                 current_node.update(action_value=final_value)
                 current_node = current_node.parent_node
+            
+            iteration_index += 1
         
         # When the max iteration count has been reached, return the best move
         best_move = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1].move
@@ -128,8 +135,6 @@ def main():
     for i in range(10):
         print(i)
         sample_state = ConnectFour()
-
-        # white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE)
 
         while not sample_state.game_over:
             if sample_state.turn == ConnectFour.WHITE:
