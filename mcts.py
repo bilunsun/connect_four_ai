@@ -14,7 +14,12 @@ class Node:
 
         self.state = copy.deepcopy(state)            
         self.move = move
-        self.untried_moves = self.state.legal_moves
+
+        if self.move is not None:
+            assert move in self.state.legal_moves
+            self.state.make_move(move)
+
+        # self.untried_moves = self.state.legal_moves
 
         self.visit_count = 0
         self.total_action_value = 0
@@ -23,10 +28,7 @@ class Node:
 
         if self.parent_node is not None:
             self.prior_probability = self.parent_node.prior_probability
-        
-        if self.move is not None:
-            self.state.make_move(move)
-    
+
     @property
     def upper_confidence(self) -> float:
         return self.prior_probability * np.sqrt(self.parent_node.visit_count) / (1 + self.visit_count)
@@ -81,49 +83,52 @@ class MCTS:
         """
         Create a child node for each available action/move
         """
-        current_node.visit_count += 1
-
-        if current_node.visit_count == 1:  # If this is the first time the node is visited, expand
-            for move in current_node.untried_moves:  # For each possible move, create a child node
-                current_node.add_child(move=move)
-            
-            current_node.untried_moves = []  # Clear the untried moves
-            
-            return current_node.child_nodes[0]  # Set the current node to the first child node
-        else:  # Otherwise, proceed to roll-out
+        if current_node.visit_count == 0:
             return current_node
+        
+        if not current_node.state.legal_moves:
+            current_node.state.print_board()
+            print("No more legal moves???")
+            exit()
+        for move in current_node.state.legal_moves:  # For each possible move, create a child node
+            current_node.add_child(move=move)
+        
+        return current_node.child_nodes[0]  # Set the current node to the first child node
     
-    def rollout(self, current_node: Node) -> None:
+    def rollout(self, current_node: Node) -> int:
         """
-        Perform rollout by playing random moves until the game ends
+        Perform rollout by playing random moves until the game ends, then return the final value
         """
-        while not current_node.state.game_over:
-            random_move = random.choice(current_node.state.legal_moves)
-            current_node.state.make_move(random_move)
-    
-    def backpropagate(self, current_node: Node) -> None:
-        """
-        Assign a score to the result, then propagate it to all the ancestor nodes
-        """
-        # First get a score
-        if self.player == ConnectFour.WHITE:
-            if current_node.state.winner == "white":
-                final_value = 1
-            elif current_node.state.winner == "black":
-                final_value = -1
-            else:
-                final_value = 0
-        else:
-            if current_node.state.winner == "black":
-                final_value = 1
-            elif current_node.state.winner == "white":
-                final_value = -1
-            else:
-                final_value = 0
+        # Make a copy of the state, to not modify the current node
+        copied_state = copy.deepcopy(current_node.state)
 
-        # Then, propagate it to all the ancestors
+        while not copied_state.game_over:
+            random_move = random.choice(copied_state.legal_moves)
+            copied_state.make_move(random_move)
+        
+        # Get the final value
+        if copied_state.winner == "drawn":
+            return 0
+
+        if self.player == ConnectFour.WHITE:
+            if copied_state.winner == "white":
+                final_value = 1
+            elif copied_state.winner == "black":
+                final_value = -1
+        else:
+            if copied_state.winner == "black":
+                final_value = 1
+            elif copied_state.winner == "white":
+                final_value = -1
+        
+        return final_value
+    
+    def backpropagate(self, current_node: Node, value: int) -> None:
+        """
+        Propagate the score to all the ancestor nodes
+        """
         while current_node is not None:
-            current_node.update(action_value=final_value)
+            current_node.update(action_value=value)
             current_node = current_node.parent_node
 
     def get_best_move(self) -> int:
@@ -138,16 +143,34 @@ class MCTS:
             expanded_child_node = self.expand(leaf_node)
             
             # Rollout
-            self.rollout(expanded_child_node)
+            final_value = self.rollout(expanded_child_node)
             
             # Backpropagate
-            self.backpropagate(expanded_child_node)
+            self.backpropagate(expanded_child_node, final_value)
             
             iteration_index += 1
         
-        # When the max iteration count has been reached, return the best move
-        best_move = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1].move
-        return best_move
+        print(f"Iterations: {iteration_index}")
+        scores = [child_node.visit_count for child_node in self.root_node.child_nodes]
+        print("Scores: ", scores)
+        
+        # When the max iteration count has been reached, update the tree, and return the best move
+        best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
+
+        self.root_node = best_node
+        return best_node.move
+    
+    def make_opponent_move(self, opponent_move) -> None:
+        if len(self.root_node.child_nodes) == 0:  # If this is the first move
+            self.root_node.state.make_move(opponent_move)
+            return
+
+        changed = False
+        for child_node in self.root_node.child_nodes:
+            if child_node.move == opponent_move:
+                changed = True
+                self.root_node = child_node
+                break
 
 
 def main():
@@ -158,20 +181,32 @@ def main():
     }
 
     for i in range(10):
+        print(i)
         sample_state = ConnectFour()
 
+        white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=2000, timeout_s=4)
+        black_mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=2000, timeout_s=4)
+
         while not sample_state.game_over:
+            sample_state.print_board()
+
             if sample_state.turn == ConnectFour.WHITE:
-                move = random.choice(sample_state.legal_moves)
-                # mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=100)
-                # move = mcts.get_best_move()
+                # print("Before: ", white_mcts.root_node)
+                # move = random.choice(sample_state.legal_moves)
+                # move = int(input("Your turn: "))
+                # print("After : ", white_mcts.root_node)
+                move = white_mcts.get_best_move()
+
+                # Update the MCTS for the opponent
+                black_mcts.make_opponent_move(move)
             else:
                 # move = random.choice(sample_state.legal_moves)
-                mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=100)
-                move = mcts.get_best_move()
+                move = int(input("Your Move: "))
+                # move = black_mcts.get_best_move()
+
+                white_mcts.make_opponent_move(move)
 
             sample_state.make_move(move)
-            # sample_state.print_board()
 
         results[sample_state.winner] += 1
         

@@ -43,14 +43,16 @@ class ConnectFour:
     def __init__(self) -> None:
         self.board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
         self.free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
+        self.legal_moves = [i for i in range(self.COLUMNS)]
 
         self.turn = self.BLACK
         self.game_over = False
         self.winner = None
         self.pieces_count = 0
 
-    def make_move(self, column: int) -> None:
+    def make_move(self, column: int) -> bool:
         free_row_index = self.free_row_indices[column]
+        assert free_row_index != -1
         self.current_board[free_row_index, column] = 1
 
         if self.is_winning_move(column):
@@ -63,6 +65,8 @@ class ConnectFour:
             return
 
         self.free_row_indices[column] -= 1
+        if self.free_row_indices[column] < 0:
+            self.legal_moves.remove(column)
 
         self.turn = not self.turn
         self.pieces_count += 1
@@ -102,18 +106,23 @@ class ConnectFour:
     def current_board(self) -> np.ndarray:
         return self.board[int(self.turn)]
 
-    @property
-    def legal_moves(self) -> List:
-        return [i for i in range(self.COLUMNS) if self.free_row_indices[i] >= 0]
+    # @property
+    # def legal_moves(self) -> List:
+    #     return [i for i in range(self.COLUMNS) if self.free_row_indices[i] >= 0]
+
 
     def make_random_move(self) -> None:
-        random_move = random.choice(self.legal_moves)
+        # random_move = random.choice(self.legal_moves)
+        random_move = self.legal_moves[0]
         self.make_move(random_move)
 
     def print_board(self) -> None:
         player = "White" if self.turn else "Black"
         output_repr = f"Turn: {player}\n"
+        output_repr += f"free_row_indices: {self.free_row_indices}\n"
+        output_repr += f"legal_moves: {self.legal_moves}\n"
 
+        output_repr += "0  1  2  3  4  5  6\n"
         for i in range(self.ROWS):
             row = ""
             for j in range(self.COLUMNS):
@@ -143,7 +152,7 @@ def play_sample_game(verbose: bool = False) -> None:
 def benchmark(iterations: int = 1000) -> None:
     times = []
 
-    for i in range(1000):
+    for i in range(iterations):
         start_time_s = time.time()
 
         game = ConnectFour()
@@ -160,7 +169,8 @@ def benchmark(iterations: int = 1000) -> None:
 
 
 def main() -> None:
-    play_sample_game(verbose=True)
+    benchmark()
+    # play_sample_game(verbose=True)
 
 
 if __name__ == "__main__":
