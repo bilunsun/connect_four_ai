@@ -19,8 +19,6 @@ class Node:
             assert move in self.state.legal_moves
             self.state.make_move(move)
 
-        # self.untried_moves = self.state.legal_moves
-
         self.visit_count = 0
         self.total_action_value = 0
         self.mean_action_value = 0
@@ -50,11 +48,6 @@ class Node:
         self.child_nodes.append(child_node)
 
         return child_node
-
-    def update(self, action_value: float) -> None:
-        self.visit_count += 1
-        self.total_action_value += action_value
-        self.mean_action_value = self.total_action_value / self.visit_count
 
 
 class MCTS:
@@ -89,13 +82,12 @@ class MCTS:
         if not current_node.state.legal_moves:
             current_node.state.print_board()
             print("No more legal moves???")
-            exit()
         for move in current_node.state.legal_moves:  # For each possible move, create a child node
             current_node.add_child(move=move)
         
         return current_node.child_nodes[0]  # Set the current node to the first child node
     
-    def rollout(self, current_node: Node) -> int:
+    def rollout(self, current_node: Node) -> str:
         """
         Perform rollout by playing random moves until the game ends, then return the final value
         """
@@ -106,29 +98,32 @@ class MCTS:
             random_move = random.choice(copied_state.legal_moves)
             copied_state.make_move(random_move)
         
-        # Get the final value
-        if copied_state.winner == "drawn":
-            return 0
-
-        if self.player == ConnectFour.WHITE:
-            if copied_state.winner == "white":
-                final_value = 1
-            elif copied_state.winner == "black":
-                final_value = -1
-        else:
-            if copied_state.winner == "black":
-                final_value = 1
-            elif copied_state.winner == "white":
-                final_value = -1
-        
-        return final_value
+        return copied_state.winner
     
-    def backpropagate(self, current_node: Node, value: int) -> None:
+    def backpropagate(self, current_node: Node, winner: str) -> None:
         """
-        Propagate the score to all the ancestor nodes
+        Propagate the score to all the ancestor nodes of the same turn
         """
+        # Final values for WHITE
+        if winner == "white":
+            final_value = 1
+        elif winner == "black":
+            final_value = -1
+        else:
+            final_value = 0
+
+        # Convert for BLACK, if needed
+        if self.root_node.state.turn == ConnectFour.BLACK:
+            final_value *= -1
+
         while current_node is not None:
-            current_node.update(action_value=value)
+            current_node.visit_count += 1
+
+            # Propagate to the ancestor nodes
+            if current_node.state.turn != self.root_node.state.turn:  # Only credit the nodes with the same turn
+                current_node.total_action_value += final_value
+                current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
+
             current_node = current_node.parent_node
 
     def get_best_move(self) -> int:
@@ -143,10 +138,10 @@ class MCTS:
             expanded_child_node = self.expand(leaf_node)
             
             # Rollout
-            final_value = self.rollout(expanded_child_node)
+            winner = self.rollout(expanded_child_node)
             
             # Backpropagate
-            self.backpropagate(expanded_child_node, final_value)
+            self.backpropagate(expanded_child_node, winner)
             
             iteration_index += 1
         
@@ -171,6 +166,7 @@ class MCTS:
                 changed = True
                 self.root_node = child_node
                 break
+        assert changed == True
 
 
 def main():
@@ -184,25 +180,25 @@ def main():
         print(i)
         sample_state = ConnectFour()
 
-        white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=2000, timeout_s=4)
-        black_mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=2000, timeout_s=4)
+        white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=1000, timeout_s=40000000000)
+        black_mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=1000, timeout_s=40000000000)
 
         while not sample_state.game_over:
             sample_state.print_board()
 
             if sample_state.turn == ConnectFour.WHITE:
                 # print("Before: ", white_mcts.root_node)
-                # move = random.choice(sample_state.legal_moves)
+                move = random.choice(sample_state.legal_moves)
                 # move = int(input("Your turn: "))
                 # print("After : ", white_mcts.root_node)
-                move = white_mcts.get_best_move()
+                # move = white_mcts.get_best_move()
 
                 # Update the MCTS for the opponent
                 black_mcts.make_opponent_move(move)
             else:
                 # move = random.choice(sample_state.legal_moves)
-                move = int(input("Your Move: "))
-                # move = black_mcts.get_best_move()
+                # move = int(input("Your Move: "))
+                move = black_mcts.get_best_move()
 
                 white_mcts.make_opponent_move(move)
 
