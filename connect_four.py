@@ -57,11 +57,13 @@ class ConnectFour:
 
         if self.is_winning_move(column):
             self.game_over = True
-            
+
             if self.turn == self.WHITE:
                 self.winner = "white"
-            else:
+            elif self.turn == self.BLACK:
                 self.winner = "black"
+            else:
+                self.winner = "drawn"
             return
 
         self.free_row_indices[column] -= 1
@@ -145,7 +147,7 @@ def play_sample_game(verbose: bool = False) -> None:
 
         if verbose:
             game.print_board()
-    
+
     game.print_board()
 
 

@@ -23,6 +23,8 @@ class Node:
             assert move in self.state.legal_moves
             self.state.make_move(move)
 
+        self.untried_moves = self.state.legal_moves[::]  # Is this list copy needed?
+
         self.visit_count = 0
         self.total_action_value = 0
         self.mean_action_value = 0
@@ -30,6 +32,10 @@ class Node:
 
         if self.parent_node is not None:
             self.prior_probability = self.parent_node.prior_probability
+
+    @property
+    def is_expandable(self) -> bool:
+        return len(self.untried_moves) > 0
 
     @property
     def upper_confidence(self) -> float:
@@ -47,11 +53,21 @@ class Node:
             key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
         return selected_child_node
 
-    def add_child(self, move: int) -> "Node":
+    def add_child_node(self) -> "Node":
+        move = self.untried_moves.pop()
         child_node = Node(move=move, parent_node=self)
         self.child_nodes.append(child_node)
 
         return child_node
+
+    def add_children_nodes(self) -> "Node":
+        for move in self.untried_moves:
+            child_node = Node(move=move, parent_node=self)
+            self.child_nodes.append(child_node)
+
+        self.untried_moves = []
+
+        return self.child_nodes[0]
 
 
 class MCTS:
@@ -68,6 +84,9 @@ class MCTS:
     def select(self) -> Node:
         """
         Get a leaf node by selecting child nodes that maximizes UCB1
+        Stop when one or more of the legal moves in a node does not have a corresponding child node
+        In the implementation where expansion creates all possible children, that simply means checking
+        that there are no child nodes
         """
         current_node = self.root_node
 
@@ -78,18 +97,12 @@ class MCTS:
 
     def expand(self, current_node: Node) -> Node:
         """
-        Create a child node for each available action/move
+        Create a child node if possible
         """
-        if current_node.visit_count == 0:
-            return current_node
+        if current_node.is_expandable:
+            current_node = current_node.add_children_nodes()
 
-        if not current_node.state.legal_moves:
-            current_node.state.print_board()
-            print("No more legal moves???")
-        for move in current_node.state.legal_moves:  # For each possible move, create a child node
-            current_node.add_child(move=move)
-
-        return current_node.child_nodes[0]  # Set the current node to the first child node
+        return current_node
 
     def rollout(self, current_node: Node) -> str:
         """
@@ -108,25 +121,19 @@ class MCTS:
         """
         Propagate the score to all the ancestor nodes of the same turn
         """
-        # Final values for WHITE
-        if winner == "white":
-            final_value = 1
-        elif winner == "black":
-            final_value = -1
-        else:
-            final_value = 0
-
-        # Convert for BLACK, if needed
-        if self.root_node.state.turn == ConnectFour.BLACK:
-            final_value *= -1
-
-        while current_node is not None:
+        while current_node is not self.root_node:
             current_node.visit_count += 1
 
             # Propagate to the ancestor nodes
-            if current_node.state.turn != self.root_node.state.turn:  # Only credit the nodes with the same turn
-                current_node.total_action_value += final_value
-                current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
+            # Note that only the nodes with the opposite turn than the current_node's turn are updated
+            # Indeed, if one player wins the roll-out, then only the nodes that are *about* to make
+            #   the player's move ought to be rewarded
+            if winner != "drawn":
+                winner_turn = 1 if winner == "white" else 0
+
+                if current_node.state.turn == winner_turn:
+                    current_node.total_action_value += 1
+                    current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
 
             current_node = current_node.parent_node
 
@@ -180,7 +187,7 @@ def main():
         "drawn": 0
     }
 
-    for i in range(10):
+    for i in range(3):
         print(i)
         sample_state = ConnectFour()
 
