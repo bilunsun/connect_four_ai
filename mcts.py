@@ -8,11 +8,15 @@ from connect_four import ConnectFour
 
 
 class Node:
-    def __init__(self, parent_node: "Node", move: int, state: ConnectFour) -> None:
+    def __init__(self, parent_node: "Node", move: int, state: ConnectFour = None) -> None:
         self.parent_node = parent_node
         self.child_nodes = []
 
-        self.state = copy.deepcopy(state)
+        if self.parent_node is None:
+            self.state = copy.deepcopy(state)
+        else:
+            self.state = copy.deepcopy(self.parent_node.state)
+
         self.move = move
 
         if self.move is not None:
