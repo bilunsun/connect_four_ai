@@ -48,7 +48,7 @@ class Node:
         return selected_child_node
 
     def add_child(self, move: int) -> "Node":
-        child_node = Node(move=move, parent_node=self, state=self.state)
+        child_node = Node(move=move, parent_node=self)
         self.child_nodes.append(child_node)
 
         return child_node
