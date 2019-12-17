@@ -12,7 +12,7 @@ class Node:
         self.parent_node = parent_node
         self.child_nodes = []
 
-        self.state = copy.deepcopy(state)            
+        self.state = copy.deepcopy(state)
         self.move = move
 
         if self.move is not None:
@@ -30,7 +30,7 @@ class Node:
     @property
     def upper_confidence(self) -> float:
         return self.prior_probability * np.sqrt(self.parent_node.visit_count) / (1 + self.visit_count)
-    
+
     @property
     def ucb1(self) -> float:
         if self.visit_count == 0:
@@ -39,10 +39,10 @@ class Node:
         return self.mean_action_value + 2 * np.sqrt(np.log(self.parent_node.visit_count) / self.visit_count)
 
     def select_child_node(self) -> "Node":
-        selected_child_node = sorted(self.child_nodes, 
+        selected_child_node = sorted(self.child_nodes,
             key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
         return selected_child_node
-    
+
     def add_child(self, move: int) -> "Node":
         child_node = Node(move=move, parent_node=self, state=self.state)
         self.child_nodes.append(child_node)
@@ -60,33 +60,33 @@ class MCTS:
         self.player = player
         self.itermax = itermax
         self.timeout_s = timeout_s
-    
+
     def select(self) -> Node:
         """
         Get a leaf node by selecting child nodes that maximizes UCB1
         """
         current_node = self.root_node
-        
+
         while len(current_node.child_nodes) != 0:
             current_node = current_node.select_child_node()
-        
+
         return current_node
-    
+
     def expand(self, current_node: Node) -> Node:
         """
         Create a child node for each available action/move
         """
         if current_node.visit_count == 0:
             return current_node
-        
+
         if not current_node.state.legal_moves:
             current_node.state.print_board()
             print("No more legal moves???")
         for move in current_node.state.legal_moves:  # For each possible move, create a child node
             current_node.add_child(move=move)
-        
+
         return current_node.child_nodes[0]  # Set the current node to the first child node
-    
+
     def rollout(self, current_node: Node) -> str:
         """
         Perform rollout by playing random moves until the game ends, then return the final value
@@ -97,9 +97,9 @@ class MCTS:
         while not copied_state.game_over:
             random_move = random.choice(copied_state.legal_moves)
             copied_state.make_move(random_move)
-        
+
         return copied_state.winner
-    
+
     def backpropagate(self, current_node: Node, winner: str) -> None:
         """
         Propagate the score to all the ancestor nodes of the same turn
@@ -133,28 +133,28 @@ class MCTS:
         while iteration_index < self.itermax and time.time() - start_time_s < self.timeout_s:
             # Select
             leaf_node = self.select()
-            
+
             # Expand
             expanded_child_node = self.expand(leaf_node)
-            
+
             # Rollout
             winner = self.rollout(expanded_child_node)
-            
+
             # Backpropagate
             self.backpropagate(expanded_child_node, winner)
-            
+
             iteration_index += 1
-        
+
         print(f"Iterations: {iteration_index}")
         scores = [child_node.visit_count for child_node in self.root_node.child_nodes]
         print("Scores: ", scores)
-        
+
         # When the max iteration count has been reached, update the tree, and return the best move
         best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
 
         self.root_node = best_node
         return best_node.move
-    
+
     def make_opponent_move(self, opponent_move) -> None:
         if len(self.root_node.child_nodes) == 0:  # If this is the first move
             self.root_node.state.make_move(opponent_move)
@@ -205,7 +205,7 @@ def main():
             sample_state.make_move(move)
 
         results[sample_state.winner] += 1
-        
+
     print(results)
 
 

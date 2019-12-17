@@ -1,2 +1,5 @@
 - Handle the case where there are no legal moves after selecting a leaf node
- 
+
+- Check whether the list copy is really needed in mcts.py
+    `self.untried = self.state.legal_moves[::]`
+    Since legal_moves is a `@property`
