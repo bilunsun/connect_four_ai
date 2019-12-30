@@ -111,14 +111,8 @@ class ConnectFour:
     def current_board(self) -> np.ndarray:
         return self.board[int(self.turn)]
 
-    # @property
-    # def legal_moves(self) -> List:
-    #     return [i for i in range(self.COLUMNS) if self.free_row_indices[i] >= 0]
-
-
     def make_random_move(self) -> None:
-        # random_move = random.choice(self.legal_moves)
-        random_move = self.legal_moves[0]
+        random_move = random.choice(self.legal_moves)
         self.make_move(random_move)
 
     def print_board(self) -> None:
@@ -162,7 +156,6 @@ def benchmark(iterations: int = 1000) -> None:
 
         while not game.game_over:
             game.make_random_move()
-            # game.print_board()
 
         times.append(time.time() - start_time_s)
 

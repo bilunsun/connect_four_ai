@@ -49,8 +49,7 @@ class Node:
         return self.mean_action_value + np.sqrt(2) * np.sqrt(np.log(self.parent_node.visit_count) / self.visit_count)
 
     def select_child_node(self) -> "Node":
-        selected_child_node = sorted(self.child_nodes,
-            key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
+        selected_child_node = sorted(self.child_nodes, key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
         return selected_child_node
 
     def add_child_node(self) -> "Node":
@@ -75,9 +74,8 @@ class MCTS:
     Monte Carlo Tree Search algorithm implementation
     Based on https://www.youtube.com/watch?v=UXW2yZndl7U
     """
-    def __init__(self, root_state: ConnectFour, player: int, itermax: int = 100, timeout_s: float = 1.0):
+    def __init__(self, root_state: ConnectFour, itermax: int = 100, timeout_s: float = 1.0):
         self.root_node = Node(parent_node=None, move=None, state=root_state)
-        self.player = player
         self.itermax = itermax
         self.timeout_s = timeout_s
 
@@ -172,49 +170,35 @@ class MCTS:
             self.root_node.state.make_move(opponent_move)
             return
 
-        changed = False
         for child_node in self.root_node.child_nodes:
             if child_node.move == opponent_move:
-                changed = True
                 self.root_node = child_node
                 break
-        assert changed == True
 
 
-def main():
+def benchmark():
     results = {
         "white": 0,
         "black": 0,
         "drawn": 0
     }
 
-    for i in range(1):
+    for i in range(10):
         print(i)
         sample_state = ConnectFour()
 
-        # white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=1000, timeout_s=40000000000)
-        # black_mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=1000, timeout_s=40000000000)
+        white_mcts = MCTS(root_state=sample_state, itermax=500, timeout_s=1)
+        black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=1)
 
         while not sample_state.game_over:
             sample_state.print_board()
 
             if sample_state.turn == ConnectFour.WHITE:
-                # print("Before: ", white_mcts.root_node)
-                move = random.choice(sample_state.legal_moves)
-                # move = int(input("Your turn: "))
-                # print("After : ", white_mcts.root_node)
-                # white_mcts = MCTS(root_state=sample_state, player=ConnectFour.WHITE, itermax=10, timeout_s=40000000000)
-                # move = white_mcts.get_best_move()
-
-                # Update the MCTS for the opponent
+                move = white_mcts.get_best_move()
                 black_mcts.make_opponent_move(move)
             else:
-                black_mcts = MCTS(root_state=sample_state, player=ConnectFour.BLACK, itermax=1000, timeout_s=40000000000)
-                # move = random.choice(sample_state.legal_moves)
-                # move = int(input("Your Move: "))
                 move = black_mcts.get_best_move()
-
-                # white_mcts.make_opponent_move(move)
+                white_mcts.make_opponent_move(move)
 
             sample_state.make_move(move)
 
@@ -227,4 +211,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    benchmark()
