@@ -35,7 +35,7 @@ class Node:
 
     @property
     def is_expandable(self) -> bool:
-        return len(self.untried_moves) > 0
+        return not self.state.game_over and len(self.untried_moves) > 0
 
     @property
     def upper_confidence(self) -> float:
@@ -121,7 +121,7 @@ class MCTS:
         """
         Propagate the score to all the ancestor nodes of the same turn
         """
-        while current_node is not self.root_node:
+        while current_node.parent_node:
             current_node.visit_count += 1
 
             # Propagate to the ancestor nodes
@@ -133,12 +133,14 @@ class MCTS:
 
                 if current_node.state.turn != winner_turn:
                     current_node.total_action_value += 1
-                # else:
-                #     current_node.total_action_value -= 1
 
                 current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
 
             current_node = current_node.parent_node
+
+        # Note that the root node also needs to have its visit count updated
+        # Otherwise, the UCB1 score will not work
+        self.root_node.visit_count += 1
 
     def get_best_move(self) -> int:
         iteration_index = 0
@@ -158,10 +160,6 @@ class MCTS:
             self.backpropagate(expanded_child_node, winner)
 
             iteration_index += 1
-
-        print(f"Iterations: {iteration_index}")
-        scores = [child_node.visit_count for child_node in self.root_node.child_nodes]
-        print("Scores: ", scores)
 
         # When the max iteration count has been reached, update the tree, and return the best move
         best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
@@ -219,6 +217,9 @@ def main():
                 # white_mcts.make_opponent_move(move)
 
             sample_state.make_move(move)
+
+        print("FINAL STATE")
+        sample_state.print_board()
 
         results[sample_state.winner] += 1
 

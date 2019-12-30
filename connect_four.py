@@ -64,6 +64,9 @@ class ConnectFour:
                 self.winner = "black"
             else:
                 self.winner = "drawn"
+
+            self.turn = not self.turn
+
             return
 
         self.free_row_indices[column] -= 1
@@ -121,8 +124,6 @@ class ConnectFour:
     def print_board(self) -> None:
         player = "White" if self.turn else "Black"
         output_repr = f"Turn: {player}\n"
-        output_repr += f"free_row_indices: {self.free_row_indices}\n"
-        output_repr += f"legal_moves: {self.legal_moves}\n"
 
         output_repr += "0  1  2  3  4  5  6\n"
         for i in range(self.ROWS):
