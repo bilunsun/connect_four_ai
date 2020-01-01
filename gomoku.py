@@ -1,78 +1,83 @@
 import numpy as np
 import random
 import time
-from typing import List
+from typing import List, Tuple
 
 from game_template import GameTemplate
 
 
-class ConnectFour(GameTemplate):
-    ROWS = 6
-    COLUMNS = 7
+class Gomoku(GameTemplate):
+    ROWS = 8
+    COLUMNS = 8
 
     WINNING_CONDITIONS = (
         (  # Vertical
-            ((0, -3), (0, -2), (0, -1)),
-            ((0, 1), (0, -2), (0, -1)),
-            ((0, 2), (0, -1), (0, 1)),
-            ((0, 3), (0, 2), (0, 1))
+            ((0, -4), (0, -3), (0, -2), (0, -1)),
+            ((0, 1), (0, -3), (0, -2), (0, -1)),
+            ((0, 3), (0, 2), (0, -1), (0, 1)),
+            ((0, 4), (0, 3), (0, 2), (0, 1))
         ),
 
         (  # Horizontal
-            ((-3, 0), (-2, 0), (-1, 0)),
-            ((1, 0), (-2, 0), (-1, 0)),
-            ((2, 0), (-1, 0), (1, 0)),
-            ((3, 0), (2, 0), (1, 0))
+            ((-4, 0), (-3, 0), (-2, 0), (-1, 0)),
+            ((-3, 0), (1, 0), (-2, 0), (-1, 0)),
+            ((3, 0), (2, 0), (-1, 0), (1, 0)),
+            ((4, 0), (3, 0), (2, 0), (1, 0))
         ),
 
         (  # Forward Diagonal
-            ((1, -1), (2, -2), (3, -3)),
-            ((-1, 1), (1, -1), (2, -2)),
-            ((-2, 2), (-1, 1), (1, -1)),
-            ((-3, 3), (-2, 2), (-1, 1))
+            ((1, -1), (2, -2), (3, -3), (4, -4)),
+            ((-1, 1), (1, -1), (2, -2), (3, -3)),
+            ((-3, 3), (-2, 2), (-1, 1), (1, -1)),
+            ((-4, 4), (-3, 3), (-2, 2), (-1, 1))
         ),
 
         (  # Backward Diagonal
-            ((3, 3), (2, 2), (1, 1)),
-            ((2, 2), (-1, -1), (1, 1)),
-            ((-2, -2), (1, 1), (-1, -1)),
-            ((-3, -3), (-2, -2), (-1, -1))
+            ((4, 4), (3, 3), (2, 2), (1, 1)),
+            ((3, 3), (2, 2), (-1, -1), (1, 1)),
+            ((-3, -3), (-2, -2), (1, 1), (-1, -1)),
+            ((-4, -4), (-3, -3), (-2, -2), (-1, -1))
         ),
     )
 
     def __init__(self) -> None:
         self._board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
-        self._free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
 
         self._turn = self.BLACK
         self._result = None
         self._pieces_count = 0
 
     def turn(self) -> int:
-        return self._turn
+        return int(self._turn)
 
     @property
     def legal_moves(self) -> List:
-        return [i for i, free_row_index in enumerate(self._free_row_indices) if free_row_index >= 0]
+        legal_moves_list = []
 
-    def make_move(self, column: int) -> None:
-        free_row_index = self._free_row_indices[column]
-        self.current_board[free_row_index, column] = 1
+        for i in range(self.ROWS):
+            for j in range(self.COLUMNS):
+                if not self._board[self.BLACK, i, j] and not self._board[self.WHITE, i, j]:
+                    legal_moves_list.append((i, j))
+
+        return legal_moves_list
+
+    def make_move(self, move: Tuple[int, int]) -> None:
+        row, col = move
+        self._board[self.turn(), row, col] = 1
         self._pieces_count += 1
 
-        if not self.game_ending_move(column):
+        if not self.game_ending_move(move):
             self._turn = not self._turn
-            self._free_row_indices[column] -= 1
 
     def result(self) -> str:
         return self._result
 
-    def game_ending_move(self, column: int) -> bool:
+    def game_ending_move(self, move: Tuple[int, int]) -> bool:
         if self._pieces_count == self.ROWS * self.COLUMNS:
             self._result = self.VARIANT_DRAWN
             return True
 
-        row = self._free_row_indices[column]
+        row, column = move
 
         for win_conditions in self.WINNING_CONDITIONS:
             for win_condition in win_conditions:
@@ -117,9 +122,10 @@ class ConnectFour(GameTemplate):
         player = "White" if self._turn else "Black"
         output_repr = f"Turn: {player}\n"
 
-        output_repr += "0  1  2  3  4  5  6\n"
+        output_repr += "   " + "  ".join(map(chr, np.arange(self.COLUMNS) + ord("A"))) + "\n"
+
         for i in range(self.ROWS):
-            row = ""
+            row = chr(i + ord("A")) + "  "
             for j in range(self.COLUMNS):
                 if self._board[self.BLACK, i, j]:
                     row += "X  "
@@ -133,7 +139,7 @@ class ConnectFour(GameTemplate):
 
 
 def play_sample_game(verbose: bool = False) -> None:
-    game = ConnectFour()
+    game = Gomoku()
 
     while not game.is_game_over():
         game.make_random_move()
@@ -145,16 +151,18 @@ def play_sample_game(verbose: bool = False) -> None:
     game.print_board()
 
 
-def benchmark(iterations: int = 1000) -> None:
+def benchmark(iterations: int = 100) -> None:
     times = []
 
     for _ in range(iterations):
         start_time_s = time.time()
 
-        game = ConnectFour()
+        game = Gomoku()
 
         while not game.is_game_over():
             game.make_random_move()
+
+        game.print_board()
 
         times.append(time.time() - start_time_s)
 
@@ -164,8 +172,8 @@ def benchmark(iterations: int = 1000) -> None:
 
 
 def main() -> None:
-    # benchmark()
-    play_sample_game(verbose=True)
+    benchmark()
+    # play_sample_game(verbose=True)
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ import time
 from typing import List
 
 from connect_four import ConnectFour
+from gomoku import Gomoku
 from game_template import GameTemplate
 
 
@@ -33,6 +34,12 @@ class Node:
 
         if self.parent_node is not None:
             self.prior_probability = self.parent_node.prior_probability
+
+    def descendants_count(self) -> int:
+        if not self.child_nodes:
+            return 0
+
+        return len(self.child_nodes) + sum([child_node.descendants_count() for child_node in self.child_nodes])
 
     @property
     def is_expandable(self) -> bool:
@@ -160,8 +167,8 @@ class MCTS:
 
             iteration_index += 1
 
-        print(f"Iterations: {iteration_index}")
-        print(iteration_index, [child_node.total_action_value for child_node in self.root_node.child_nodes])
+        # print(f"Iterations: {iteration_index}")
+        # print(iteration_index, [child_node.total_action_value for child_node in self.root_node.child_nodes])
 
         # When the max iteration count has been reached, update the tree, and return the best move
         best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
@@ -172,6 +179,7 @@ class MCTS:
     def make_opponent_move(self, opponent_move) -> None:
         if len(self.root_node.child_nodes) == 0:  # If this is the first move
             self.root_node.state.make_move(opponent_move)
+            self.root_node.untried_moves.remove(opponent_move)
             return
 
         for child_node in self.root_node.child_nodes:
@@ -183,21 +191,22 @@ class MCTS:
 def play_sample_game(Game: GameTemplate) -> str:
     sample_state = Game()
 
-    # white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=1)
-    black_mcts = MCTS(root_state=sample_state, itermax=1000000, timeout_s=3)
+    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10)
+    black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10)
 
     while not sample_state.is_game_over():
         sample_state.print_board()
 
         if sample_state.turn() == Game.WHITE:
-            # move = white_mcts.get_best_move()
-            move = int(input("Your move: "))
+            move = white_mcts.get_best_move()
+            # move = int(input("Your move: "))
             black_mcts.make_opponent_move(move)
         else:
             move = black_mcts.get_best_move()
-            # white_mcts.make_opponent_move(move)
+            white_mcts.make_opponent_move(move)
 
         sample_state.make_move(move)
+        print("DESCENDANTS: ", black_mcts.root_node.descendants_count())
 
     print("FINAL STATE")
     sample_state.print_board()
@@ -212,10 +221,10 @@ def main():
         GameTemplate.VARIANT_DRAWN: 0
     }
 
-    for i in range(10):
+    for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(ConnectFour)
+        sample_result = play_sample_game(Gomoku)
 
         results[sample_result] += 1
 
