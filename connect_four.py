@@ -3,85 +3,77 @@ import random
 import time
 from typing import List
 
-class ConnectFour:
+from game_template import GameTemplate
+
+class ConnectFour(GameTemplate):
     ROWS = 6
     COLUMNS = 7
 
     BLACK = 0
     WHITE = 1
 
-    WINNING_CONDITIONS = [
-        [  # Vertical
-            [[0, -3], [0, -2], [0, -1]],
-            [[0, 1], [0, -2], [0, -1]],
-            [[0, 2], [0, -1], [0, 1]],
-            [[0, 3], [0, 2], [0, 1]]
-        ],
+    WINNING_CONDITIONS = (
+        (  # Vertical
+            ((0, -3), (0, -2), (0, -1)),
+            ((0, 1), (0, -2), (0, -1)),
+            ((0, 2), (0, -1), (0, 1)),
+            ((0, 3), (0, 2), (0, 1))
+        ),
 
-        [  # Horizontal
-            [[-3, 0], [-2, 0], [-1, 0]],
-            [[1, 0], [-2, 0], [-1, 0]],
-            [[2, 0], [-1, 0], [1, 0]],
-            [[3, 0], [2, 0], [1, 0]]
-        ],
+        (  # Horizontal
+            ((-3, 0), (-2, 0), (-1, 0)),
+            ((1, 0), (-2, 0), (-1, 0)),
+            ((2, 0), (-1, 0), (1, 0)),
+            ((3, 0), (2, 0), (1, 0))
+        ),
 
-        [  # Forward Diagonal
-            [[1, -1], [2, -2], [3, -3]],
-            [[-1, 1], [1, -1], [2, -2]],
-            [[-2, 2], [-1, 1], [1, -1]],
-            [[-3, 3], [-2, 2], [-1, 1]]
-        ],
+        (  # Forward Diagonal
+            ((1, -1), (2, -2), (3, -3)),
+            ((-1, 1), (1, -1), (2, -2)),
+            ((-2, 2), (-1, 1), (1, -1)),
+            ((-3, 3), (-2, 2), (-1, 1))
+        ),
 
-        [  # Backward Diagonal
-            [[3, 3], [2, 2], [1, 1]],
-            [[2, 2], [-1, -1], [1, 1]],
-            [[-2, -2], [1, 1], [-1, -1]],
-            [[-3, -3], [-2, -2], [-1, -1]]
-        ],
-    ]
+        (  # Backward Diagonal
+            ((3, 3), (2, 2), (1, 1)),
+            ((2, 2), (-1, -1), (1, 1)),
+            ((-2, -2), (1, 1), (-1, -1)),
+            ((-3, -3), (-2, -2), (-1, -1))
+        ),
+    )
 
     def __init__(self) -> None:
-        self.board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
-        self.free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
-        self.legal_moves = [i for i in range(self.COLUMNS)]
+        self._board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
+        self._free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
 
-        self.turn = self.BLACK
-        self.game_over = False
-        self.winner = None
-        self.pieces_count = 0
+        self._turn = self.BLACK
+        self._result = None
+        self._pieces_count = 0
 
-    def make_move(self, column: int) -> bool:
-        free_row_index = self.free_row_indices[column]
-        assert free_row_index != -1
+    def turn(self) -> int:
+        return self._turn
+
+    def legal_moves(self) -> List:
+        return [i for i, free_row_index in enumerate(self._free_row_indices) if free_row_index >= 0]
+
+    def make_move(self, column: int) -> None:
+        free_row_index = self._free_row_indices[column]
         self.current_board[free_row_index, column] = 1
+        self._pieces_count += 1
 
-        if self.is_winning_move(column):
-            self.game_over = True
+        if not self.game_ending_move(column):
+            self._turn = not self._turn
+            self._free_row_indices[column] -= 1
 
-            if self.turn == self.WHITE:
-                self.winner = "white"
-            elif self.turn == self.BLACK:
-                self.winner = "black"
-            else:
-                self.winner = "drawn"
+    def result(self) -> str:
+        return self._result
 
-            self.turn = not self.turn
+    def game_ending_move(self, column: int) -> bool:
+        if self._pieces_count == self.ROWS * self.COLUMNS:
+            self._result = "drawn"
+            return True
 
-            return
-
-        self.free_row_indices[column] -= 1
-        if self.free_row_indices[column] < 0:
-            self.legal_moves.remove(column)
-
-        self.turn = not self.turn
-        self.pieces_count += 1
-
-        if self.pieces_count == self.ROWS * self.COLUMNS:
-            self.game_over = True
-            self.winner = "drawn"
-
-    def is_winning_move(self, column: int) -> bool:
-        row = self.free_row_indices[column]
+        row = self._free_row_indices[column]
 
         for win_conditions in self.WINNING_CONDITIONS:
             for win_condition in win_conditions:
@@ -103,29 +95,34 @@ class ConnectFour:
                             break
 
                 if checked_all and win:
+                    if self._turn == self.BLACK:
+                        self._result = "white"
+                    else:
+                        self._result = "black"
+
                     return True
 
         return False
 
     @property
     def current_board(self) -> np.ndarray:
-        return self.board[int(self.turn)]
+        return self._board[int(self._turn)]
 
     def make_random_move(self) -> None:
-        random_move = random.choice(self.legal_moves)
+        random_move = random.choice(self.legal_moves())
         self.make_move(random_move)
 
     def print_board(self) -> None:
-        player = "White" if self.turn else "Black"
+        player = "White" if self._turn else "Black"
         output_repr = f"Turn: {player}\n"
 
         output_repr += "0  1  2  3  4  5  6\n"
         for i in range(self.ROWS):
             row = ""
             for j in range(self.COLUMNS):
-                if self.board[self.BLACK, i, j]:
+                if self._board[self.BLACK, i, j]:
                     row += "X  "
-                elif self.board[self.WHITE, i, j]:
+                elif self._board[self.WHITE, i, j]:
                     row += "O  "
                 else:
                     row += ".  "
@@ -137,24 +134,25 @@ class ConnectFour:
 def play_sample_game(verbose: bool = False) -> None:
     game = ConnectFour()
 
-    while not game.game_over:
+    while not game.is_game_over():
         game.make_random_move()
 
         if verbose:
             game.print_board()
 
+    print(f"Final Result: {game.result()}")
     game.print_board()
 
 
 def benchmark(iterations: int = 1000) -> None:
     times = []
 
-    for i in range(iterations):
+    for _ in range(iterations):
         start_time_s = time.time()
 
         game = ConnectFour()
 
-        while not game.game_over:
+        while not game.is_game_over():
             game.make_random_move()
 
         times.append(time.time() - start_time_s)
@@ -165,8 +163,8 @@ def benchmark(iterations: int = 1000) -> None:
 
 
 def main() -> None:
-    benchmark()
-    # play_sample_game(verbose=True)
+    # benchmark()
+    play_sample_game(verbose=True)
 
 
 if __name__ == "__main__":
