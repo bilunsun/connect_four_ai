@@ -9,9 +9,6 @@ class ConnectFour(GameTemplate):
     ROWS = 6
     COLUMNS = 7
 
-    BLACK = 0
-    WHITE = 1
-
     WINNING_CONDITIONS = (
         (  # Vertical
             ((0, -3), (0, -2), (0, -1)),
@@ -53,6 +50,7 @@ class ConnectFour(GameTemplate):
     def turn(self) -> int:
         return self._turn
 
+    @property
     def legal_moves(self) -> List:
         return [i for i, free_row_index in enumerate(self._free_row_indices) if free_row_index >= 0]
 
@@ -70,7 +68,7 @@ class ConnectFour(GameTemplate):
 
     def game_ending_move(self, column: int) -> bool:
         if self._pieces_count == self.ROWS * self.COLUMNS:
-            self._result = "drawn"
+            self._result = self.VARIANT_DRAWN
             return True
 
         row = self._free_row_indices[column]
@@ -96,9 +94,11 @@ class ConnectFour(GameTemplate):
 
                 if checked_all and win:
                     if self._turn == self.BLACK:
-                        self._result = "white"
+                        self._result = self.VARIANT_BLACK_WON
                     else:
-                        self._result = "black"
+                        self._result = self.VARIANT_WHITE_WON
+
+                    self._turn = not self._turn
 
                     return True
 
@@ -109,7 +109,7 @@ class ConnectFour(GameTemplate):
         return self._board[int(self._turn)]
 
     def make_random_move(self) -> None:
-        random_move = random.choice(self.legal_moves())
+        random_move = random.choice(self.legal_moves)
         self.make_move(random_move)
 
     def print_board(self) -> None:

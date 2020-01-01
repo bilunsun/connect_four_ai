@@ -5,10 +5,11 @@ import time
 from typing import List
 
 from connect_four import ConnectFour
+from game_template import GameTemplate
 
 
 class Node:
-    def __init__(self, parent_node: "Node", move: int, state: ConnectFour = None) -> None:
+    def __init__(self, parent_node: "Node", move: int, state: GameTemplate = None) -> None:
         self.parent_node = parent_node
         self.child_nodes = []
 
@@ -35,7 +36,7 @@ class Node:
 
     @property
     def is_expandable(self) -> bool:
-        return not self.state.game_over and len(self.untried_moves) > 0
+        return not self.state.is_game_over() and len(self.untried_moves) > 0
 
     @property
     def upper_confidence(self) -> float:
@@ -72,9 +73,8 @@ class Node:
 class MCTS:
     """
     Monte Carlo Tree Search algorithm implementation
-    Based on https://www.youtube.com/watch?v=UXW2yZndl7U
     """
-    def __init__(self, root_state: ConnectFour, itermax: int = 100, timeout_s: float = 1.0):
+    def __init__(self, root_state: GameTemplate, itermax: int = 100, timeout_s: float = 1.0):
         self.root_node = Node(parent_node=None, move=None, state=root_state)
         self.itermax = itermax
         self.timeout_s = timeout_s
@@ -109,28 +109,29 @@ class MCTS:
         # Make a copy of the state, to not modify the current node
         copied_state = copy.deepcopy(current_node.state)
 
-        while not copied_state.game_over:
+        while not copied_state.is_game_over():
             random_move = random.choice(copied_state.legal_moves)
             copied_state.make_move(random_move)
 
-        return copied_state.winner
+        return copied_state.result()
 
-    def backpropagate(self, current_node: Node, winner: str) -> None:
+    def backpropagate(self, current_node: Node, rollout_result: str) -> None:
         """
         Propagate the score to all the ancestor nodes of the same turn
         """
+        if rollout_result == GameTemplate.VARIANT_BLACK_WON:
+            winner_turn = GameTemplate.WHITE
+        elif rollout_result == GameTemplate.VARIANT_WHITE_WON:
+            winner_turn = GameTemplate.BLACK
+
         while current_node.parent_node:
             current_node.visit_count += 1
 
-            # Propagate to the ancestor nodes
-            # Note that only the nodes with the opposite turn than the current_node's turn are updated
-            # Indeed, if one player wins the roll-out, then only the nodes that are *about* to make
-            #   the player's move ought to be rewarded
-            if winner != "drawn":
-                winner_turn = ConnectFour.WHITE if winner == "white" else ConnectFour.BLACK
-
-                if current_node.state.turn != winner_turn:
+            if rollout_result != GameTemplate.VARIANT_DRAWN:
+                if current_node.state.turn() == winner_turn:
                     current_node.total_action_value += 1
+                else:
+                    current_node.total_action_value -= 1
 
                 current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
 
@@ -152,12 +153,15 @@ class MCTS:
             expanded_child_node = self.expand(leaf_node)
 
             # Rollout
-            winner = self.rollout(expanded_child_node)
+            rollout_result = self.rollout(expanded_child_node)
 
             # Backpropagate
-            self.backpropagate(expanded_child_node, winner)
+            self.backpropagate(expanded_child_node, rollout_result)
 
             iteration_index += 1
+
+        print(f"Iterations: {iteration_index}")
+        print(iteration_index, [child_node.total_action_value for child_node in self.root_node.child_nodes])
 
         # When the max iteration count has been reached, update the tree, and return the best move
         best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
@@ -176,39 +180,47 @@ class MCTS:
                 break
 
 
-def benchmark():
+def play_sample_game(Game: GameTemplate) -> str:
+    sample_state = Game()
+
+    # white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=1)
+    black_mcts = MCTS(root_state=sample_state, itermax=1000000, timeout_s=3)
+
+    while not sample_state.is_game_over():
+        sample_state.print_board()
+
+        if sample_state.turn() == Game.WHITE:
+            # move = white_mcts.get_best_move()
+            move = int(input("Your move: "))
+            black_mcts.make_opponent_move(move)
+        else:
+            move = black_mcts.get_best_move()
+            # white_mcts.make_opponent_move(move)
+
+        sample_state.make_move(move)
+
+    print("FINAL STATE")
+    sample_state.print_board()
+
+    return sample_state.result()
+
+
+def main():
     results = {
-        "white": 0,
-        "black": 0,
-        "drawn": 0
+        GameTemplate.VARIANT_WHITE_WON: 0,
+        GameTemplate.VARIANT_BLACK_WON: 0,
+        GameTemplate.VARIANT_DRAWN: 0
     }
 
     for i in range(10):
         print(i)
-        sample_state = ConnectFour()
 
-        white_mcts = MCTS(root_state=sample_state, itermax=500, timeout_s=1)
-        black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=1)
+        sample_result = play_sample_game(ConnectFour)
 
-        while not sample_state.game_over:
-            sample_state.print_board()
-
-            if sample_state.turn == ConnectFour.WHITE:
-                move = white_mcts.get_best_move()
-                black_mcts.make_opponent_move(move)
-            else:
-                move = black_mcts.get_best_move()
-                white_mcts.make_opponent_move(move)
-
-            sample_state.make_move(move)
-
-        print("FINAL STATE")
-        sample_state.print_board()
-
-        results[sample_state.winner] += 1
+        results[sample_result] += 1
 
     print(results)
 
 
 if __name__ == "__main__":
-    benchmark()
+    main()
