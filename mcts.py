@@ -81,10 +81,11 @@ class MCTS:
     """
     Monte Carlo Tree Search algorithm implementation
     """
-    def __init__(self, root_state: GameTemplate, itermax: int = 100, timeout_s: float = 1.0):
+    def __init__(self, root_state: GameTemplate, itermax: int = 100, timeout_s: float = 1.0, debug: bool = False):
         self.root_node = Node(parent_node=None, move=None, state=root_state)
         self.itermax = itermax
         self.timeout_s = timeout_s
+        self.debug = debug
 
     def select(self) -> Node:
         """
@@ -109,7 +110,7 @@ class MCTS:
 
         return current_node
 
-    def rollout(self, current_node: Node) -> str:
+    def rollout(self, current_node: Node) -> int:
         """
         Perform rollout by playing random moves until the game ends, then return the final value
         """
@@ -122,23 +123,21 @@ class MCTS:
 
         return copied_state.result()
 
-    def backpropagate(self, current_node: Node, rollout_result: str) -> None:
+    def backpropagate(self, current_node: Node, rollout_result: int) -> None:
         """
-        Propagate the score to all the ancestor nodes of the same turn
+        Propagate the rollout result to all the ancestor nodes
         """
-        if rollout_result == GameTemplate.VARIANT_BLACK_WON:
-            winner_turn = GameTemplate.WHITE
-        elif rollout_result == GameTemplate.VARIANT_WHITE_WON:
-            winner_turn = GameTemplate.BLACK
+        favoured_player = rollout_result > 0
+        score = abs(rollout_result)
 
         while current_node.parent_node:
             current_node.visit_count += 1
 
             if rollout_result != GameTemplate.VARIANT_DRAWN:
-                if current_node.state.turn() == winner_turn:
-                    current_node.total_action_value += 1
+                if current_node.state.turn() != favoured_player:
+                    current_node.total_action_value += score
                 else:
-                    current_node.total_action_value -= 1
+                    current_node.total_action_value -= score
 
                 current_node.mean_action_value = current_node.total_action_value / current_node.visit_count
 
@@ -167,8 +166,11 @@ class MCTS:
 
             iteration_index += 1
 
-        # print(f"Iterations: {iteration_index}")
-        # print(iteration_index, [child_node.total_action_value for child_node in self.root_node.child_nodes])
+        if self.debug:
+            print(f"Iterations: {iteration_index}")
+            print("descendants", self.root_node.descendants_count())
+            print("visits", [child_node.visit_count for child_node in self.root_node.child_nodes])
+            print("action", [child_node.total_action_value for child_node in self.root_node.child_nodes])
 
         # When the max iteration count has been reached, update the tree, and return the best move
         best_node = sorted(self.root_node.child_nodes, key=lambda node: node.visit_count)[-1]
@@ -179,7 +181,7 @@ class MCTS:
     def make_opponent_move(self, opponent_move) -> None:
         if len(self.root_node.child_nodes) == 0:  # If this is the first move
             self.root_node.state.make_move(opponent_move)
-            self.root_node.untried_moves.remove(opponent_move)
+            self.root_node.untried_moves = self.root_node.state.legal_moves
             return
 
         for child_node in self.root_node.child_nodes:
@@ -191,8 +193,8 @@ class MCTS:
 def play_sample_game(Game: GameTemplate) -> str:
     sample_state = Game()
 
-    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10)
-    black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10)
+    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=5, debug=True)
+    black_mcts = MCTS(root_state=sample_state, itermax=1000, timeout_s=5, debug=True)
 
     while not sample_state.is_game_over():
         sample_state.print_board()
@@ -206,7 +208,6 @@ def play_sample_game(Game: GameTemplate) -> str:
             white_mcts.make_opponent_move(move)
 
         sample_state.make_move(move)
-        print("DESCENDANTS: ", black_mcts.root_node.descendants_count())
 
     print("FINAL STATE")
     sample_state.print_board()
@@ -224,7 +225,7 @@ def main():
     for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(Gomoku)
+        sample_result = play_sample_game(ConnectFour)
 
         results[sample_result] += 1
 

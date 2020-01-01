@@ -7,8 +7,8 @@ from game_template import GameTemplate
 
 
 class Gomoku(GameTemplate):
-    ROWS = 8
-    COLUMNS = 8
+    ROWS = 6
+    COLUMNS = 6
 
     WINNING_CONDITIONS = (
         (  # Vertical
@@ -69,7 +69,7 @@ class Gomoku(GameTemplate):
         if not self.game_ending_move(move):
             self._turn = not self._turn
 
-    def result(self) -> str:
+    def result(self) -> int:
         return self._result
 
     def game_ending_move(self, move: Tuple[int, int]) -> bool:

@@ -64,7 +64,7 @@ class ConnectFour(GameTemplate):
             self._turn = not self._turn
             self._free_row_indices[column] -= 1
 
-    def result(self) -> str:
+    def result(self) -> int:
         return self._result
 
     def game_ending_move(self, column: int) -> bool:
