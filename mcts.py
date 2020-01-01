@@ -1,4 +1,5 @@
 import copy
+import multiprocessing as mp
 import numpy as np
 import random
 import time
@@ -200,8 +201,14 @@ def play_sample_game(Game: GameTemplate) -> str:
         sample_state.print_board()
 
         if sample_state.turn() == Game.WHITE:
-            move = white_mcts.get_best_move()
-            # move = int(input("Your move: "))
+            # move = white_mcts.get_best_move()
+
+            if isinstance(Game, Gomoku):
+                row, col = input("Your move: ").split()
+                move = ord(row) - ord("A"), ord(col) - ord("A")
+            elif isinstance(Game, ConnectFour):
+                move = int(input("Your move: "))
+
             black_mcts.make_opponent_move(move)
         else:
             move = black_mcts.get_best_move()
