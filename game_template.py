@@ -14,6 +14,14 @@ class GameTemplate(ABC):
     BLACK = 0
     WHITE = 1
 
+    @abstractmethod
+    def __init__(self) -> None:
+        pass
+
+    @abstractmethod
+    def turn(self) -> int:
+        pass
+
     @abstractproperty
     def legal_moves(self) -> List[Any]:
         pass
@@ -30,5 +38,5 @@ class GameTemplate(ABC):
         return self.result() is not None
 
     @abstractmethod
-    def print_board(self) -> str:
+    def print_board(self) -> None:
         pass

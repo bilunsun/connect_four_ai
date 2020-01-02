@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import time
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from game_template import GameTemplate
 
@@ -44,7 +44,7 @@ class Gomoku(GameTemplate):
         self._board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
 
         self._turn = self.BLACK
-        self._result = None
+        self._result = Union[int, None]
         self._pieces_count = 0
 
     def turn(self) -> int:

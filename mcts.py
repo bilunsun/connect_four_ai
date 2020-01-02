@@ -3,7 +3,7 @@ import multiprocessing as mp
 import numpy as np
 import random
 import time
-from typing import List
+from typing import Any, List, Optional, Tuple, Union
 
 from connect_four import ConnectFour
 from gomoku import Gomoku
@@ -11,10 +11,11 @@ from game_template import GameTemplate
 
 
 class Node:
-    def __init__(self, parent_node: "Node", move: int, state: GameTemplate = None) -> None:
+    def __init__(self, parent_node: "Node", move: Union[int, Tuple[int, int]], state: GameTemplate = None) -> None:
         self.parent_node = parent_node
-        self.child_nodes = []
+        self.child_nodes: List["Node"]
 
+        self.state: GameTemplate
         if self.parent_node is None:
             self.state = copy.deepcopy(state)
         else:
@@ -28,10 +29,10 @@ class Node:
 
         self.untried_moves = self.state.legal_moves[::]  # Is this list copy needed?
 
-        self.visit_count = 0
-        self.total_action_value = 0
-        self.mean_action_value = 0
-        self.prior_probability = 0
+        self.visit_count: int = 0
+        self.total_action_value: float = 0
+        self.mean_action_value: float = 0
+        self.prior_probability: float = 0
 
         if self.parent_node is not None:
             self.prior_probability = self.parent_node.prior_probability
@@ -148,7 +149,7 @@ class MCTS:
         # Otherwise, the UCB1 score will not work
         self.root_node.visit_count += 1
 
-    def get_best_move(self) -> int:
+    def get_best_move(self) -> Union[int, Tuple[int, int]]:
         iteration_index = 0
         start_time_s = time.time()
 
@@ -191,7 +192,7 @@ class MCTS:
                 break
 
 
-def play_sample_game(Game: GameTemplate) -> str:
+def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
     sample_state = Game()
 
     white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=5, debug=True)
@@ -199,6 +200,8 @@ def play_sample_game(Game: GameTemplate) -> str:
 
     while not sample_state.is_game_over():
         sample_state.print_board()
+
+        move: Union[int, Tuple[int, int]]
 
         if sample_state.turn() == Game.WHITE:
             # move = white_mcts.get_best_move()
