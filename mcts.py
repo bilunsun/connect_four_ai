@@ -13,7 +13,7 @@ from game_template import GameTemplate
 class Node:
     def __init__(self, parent_node: "Node", move: Union[int, Tuple[int, int]], state: GameTemplate = None) -> None:
         self.parent_node = parent_node
-        self.child_nodes: List["Node"]
+        self.child_nodes: List["Node"] = []
 
         self.state: GameTemplate
         if self.parent_node is None:
@@ -204,13 +204,13 @@ def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
         move: Union[int, Tuple[int, int]]
 
         if sample_state.turn() == Game.WHITE:
-            # move = white_mcts.get_best_move()
+            move = white_mcts.get_best_move()
 
-            if isinstance(Game, Gomoku):
-                row, col = input("Your move: ").split()
-                move = ord(row) - ord("A"), ord(col) - ord("A")
-            elif isinstance(Game, ConnectFour):
-                move = int(input("Your move: "))
+            # if isinstance(Game, Gomoku):
+            #     row, col = input("Your move: ").split()
+            #     move = ord(row) - ord("A"), ord(col) - ord("A")
+            # elif isinstance(Game, ConnectFour):
+            #     move = int(input("Your move: "))
 
             black_mcts.make_opponent_move(move)
         else:
