@@ -1,4 +1,3 @@
-import numpy as np
 import random
 import time
 from typing import List, Tuple, Union
@@ -41,10 +40,10 @@ class Gomoku(GameTemplate):
     )
 
     def __init__(self) -> None:
-        self._board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
+        self._board = [[[0 for j in range(self.COLUMNS)] for i in range(self.ROWS)] for _ in range(2)]
 
         self._turn = self.BLACK
-        self._result = Union[int, None]
+        self._result = None
         self._pieces_count = 0
 
     def turn(self) -> int:
@@ -56,14 +55,14 @@ class Gomoku(GameTemplate):
 
         for i in range(self.ROWS):
             for j in range(self.COLUMNS):
-                if not self._board[self.BLACK, i, j] and not self._board[self.WHITE, i, j]:
+                if not self._board[self.BLACK][i][j] and not self._board[self.WHITE][i][j]:
                     legal_moves_list.append((i, j))
 
         return legal_moves_list
 
     def make_move(self, move: Tuple[int, int]) -> None:
         row, col = move
-        self._board[self.turn(), row, col] = 1
+        self._current_board[row][col] = 1
         self._pieces_count += 1
 
         if not self.game_ending_move(move):
@@ -94,7 +93,7 @@ class Gomoku(GameTemplate):
                         checked_all = False
                         break
                     else:
-                        if not self.current_board[shifted_row, shifted_column]:
+                        if not self._current_board[shifted_row][shifted_column]:
                             win = False
                             break
 
@@ -111,7 +110,7 @@ class Gomoku(GameTemplate):
         return False
 
     @property
-    def current_board(self) -> np.ndarray:
+    def _current_board(self) -> List:
         return self._board[int(self._turn)]
 
     def make_random_move(self) -> None:
@@ -122,14 +121,15 @@ class Gomoku(GameTemplate):
         player = "White" if self._turn else "Black"
         output_repr = f"Turn: {player}\n"
 
-        output_repr += "   " + "  ".join(map(chr, np.arange(self.COLUMNS) + ord("A"))) + "\n"
+        # output_repr += "   " + "  ".join(map(chr, np.arange(self.COLUMNS) + ord("A"))) + "\n"
+        output_repr += "   " + "  ".join(chr(i + ord("A")) for i in range(self.COLUMNS)) + "\n"
 
         for i in range(self.ROWS):
             row = chr(i + ord("A")) + "  "
             for j in range(self.COLUMNS):
-                if self._board[self.BLACK, i, j]:
+                if self._board[self.BLACK][i][j]:
                     row += "X  "
-                elif self._board[self.WHITE, i, j]:
+                elif self._board[self.WHITE][i][j]:
                     row += "O  "
                 else:
                     row += ".  "

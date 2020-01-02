@@ -1,4 +1,3 @@
-import numpy as np
 import random
 import time
 from typing import List
@@ -41,7 +40,7 @@ class ConnectFour(GameTemplate):
     )
 
     def __init__(self) -> None:
-        self._board = np.zeros((2, self.ROWS, self.COLUMNS), dtype=int)
+        self._board = [[[0 for j in range(self.COLUMNS)] for i in range(self.ROWS)] for _ in range(2)]
         self._free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
 
         self._turn = self.BLACK
@@ -57,7 +56,7 @@ class ConnectFour(GameTemplate):
 
     def make_move(self, column: int) -> None:
         free_row_index = self._free_row_indices[column]
-        self.current_board[free_row_index, column] = 1
+        self._current_board[free_row_index][column] = 1
         self._pieces_count += 1
 
         if not self.game_ending_move(column):
@@ -89,7 +88,7 @@ class ConnectFour(GameTemplate):
                         checked_all = False
                         break
                     else:
-                        if not self.current_board[shifted_row, shifted_column]:
+                        if not self._current_board[shifted_row][shifted_column]:
                             win = False
                             break
 
@@ -106,7 +105,7 @@ class ConnectFour(GameTemplate):
         return False
 
     @property
-    def current_board(self) -> np.ndarray:
+    def _current_board(self) -> List:
         return self._board[int(self._turn)]
 
     def make_random_move(self) -> None:
@@ -121,9 +120,9 @@ class ConnectFour(GameTemplate):
         for i in range(self.ROWS):
             row = ""
             for j in range(self.COLUMNS):
-                if self._board[self.BLACK, i, j]:
+                if self._board[self.BLACK][i][j]:
                     row += "X  "
-                elif self._board[self.WHITE, i, j]:
+                elif self._board[self.WHITE][i][j]:
                     row += "O  "
                 else:
                     row += ".  "

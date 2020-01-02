@@ -1,6 +1,5 @@
 import copy
-import multiprocessing as mp
-import numpy as np
+import math
 import random
 import time
 from typing import Any, List, Optional, Tuple, Union
@@ -49,14 +48,14 @@ class Node:
 
     @property
     def upper_confidence(self) -> float:
-        return self.prior_probability * np.sqrt(self.parent_node.visit_count) / (1 + self.visit_count)
+        return self.prior_probability * math.sqrt(self.parent_node.visit_count) / (1 + self.visit_count)
 
     @property
     def ucb1(self) -> float:
         if self.visit_count == 0:
-            return np.inf
+            return math.inf
 
-        return self.mean_action_value + np.sqrt(2) * np.sqrt(np.log(self.parent_node.visit_count) / self.visit_count)
+        return self.mean_action_value + math.sqrt(2) * math.sqrt(math.log10(self.parent_node.visit_count) / self.visit_count)
 
     def select_child_node(self) -> "Node":
         selected_child_node = sorted(self.child_nodes, key=lambda child_node: child_node.ucb1)[-1]  # Biggest score
@@ -195,8 +194,8 @@ class MCTS:
 def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
     sample_state = Game()
 
-    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=5, debug=True)
-    black_mcts = MCTS(root_state=sample_state, itermax=1000, timeout_s=5, debug=True)
+    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10, debug=True)
+    black_mcts = MCTS(root_state=sample_state, itermax=1000, timeout_s=10, debug=True)
 
     while not sample_state.is_game_over():
         sample_state.print_board()
@@ -235,7 +234,7 @@ def main():
     for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(ConnectFour)
+        sample_result = play_sample_game(Gomoku)
 
         results[sample_result] += 1
 
