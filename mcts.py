@@ -1,4 +1,3 @@
-import copy
 import math
 import random
 import time
@@ -16,9 +15,9 @@ class Node:
 
         self.state: GameTemplate
         if self.parent_node is None:
-            self.state = copy.deepcopy(state)
+            self.state = state.get_copy()
         else:
-            self.state = copy.deepcopy(self.parent_node.state)
+            self.state = self.parent_node.state.get_copy()
 
         self.move = move
 
@@ -116,7 +115,7 @@ class MCTS:
         Perform rollout by playing random moves until the game ends, then return the final value
         """
         # Make a copy of the state, to not modify the current node
-        copied_state = copy.deepcopy(current_node.state)
+        copied_state = current_node.state.get_copy()
 
         while not copied_state.is_game_over():
             random_move = random.choice(copied_state.legal_moves)
@@ -194,8 +193,8 @@ class MCTS:
 def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
     sample_state = Game()
 
-    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=10, debug=True)
-    black_mcts = MCTS(root_state=sample_state, itermax=1000, timeout_s=10, debug=True)
+    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=2, debug=True)
+    black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=2, debug=True)
 
     while not sample_state.is_game_over():
         sample_state.print_board()
@@ -234,7 +233,7 @@ def main():
     for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(Gomoku)
+        sample_result = play_sample_game(ConnectFour)
 
         results[sample_result] += 1
 

@@ -38,5 +38,9 @@ class GameTemplate(ABC):
         return self.result() is not None
 
     @abstractmethod
+    def get_copy(self) -> Any:
+        pass
+
+    @abstractmethod
     def print_board(self) -> None:
         pass

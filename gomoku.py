@@ -117,6 +117,15 @@ class Gomoku(GameTemplate):
         random_move = random.choice(self.legal_moves)
         self.make_move(random_move)
 
+    def get_copy(self) -> "Gomoku":
+        copied_self = Gomoku()
+        copied_self._board = [[player_row[:] for player_row in player_board[:]] for player_board in self._board]
+        copied_self._turn = self._turn
+        copied_self._result = self._result
+        copied_self._pieces_count = self._pieces_count
+
+        return copied_self
+
     def print_board(self) -> None:
         player = "White" if self._turn else "Black"
         output_repr = f"Turn: {player}\n"
