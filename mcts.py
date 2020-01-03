@@ -190,7 +190,7 @@ class MCTS:
                 break
 
 
-def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
+def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> int:
     sample_state = Game()
 
     white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=2, debug=True)
@@ -205,8 +205,8 @@ def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> str:
             move = white_mcts.get_best_move()
 
             # if isinstance(Game, Gomoku):
-            #     row, col = input("Your move: ").split()
-            #     move = ord(row) - ord("A"), ord(col) - ord("A")
+            # row, col = input("Your move: ").split()
+            # move = ord(row) - ord("A"), ord(col) - ord("A")
             # elif isinstance(Game, ConnectFour):
             #     move = int(input("Your move: "))
 
@@ -233,7 +233,7 @@ def main():
     for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(ConnectFour)
+        sample_result = play_sample_game(Gomoku)
 
         results[sample_result] += 1
 

@@ -1,6 +1,6 @@
 import random
 import time
-from typing import List
+from typing import List, Union
 
 from game_template import GameTemplate
 
@@ -44,7 +44,7 @@ class ConnectFour(GameTemplate):
         self._free_row_indices = [self.ROWS - 1 for i in range(self.COLUMNS)]
 
         self._turn = self.BLACK
-        self._result = None
+        self._result: int = None
         self._pieces_count = 0
 
     def turn(self) -> int:
@@ -63,7 +63,7 @@ class ConnectFour(GameTemplate):
             self._turn = not self._turn
             self._free_row_indices[column] -= 1
 
-    def result(self) -> int:
+    def result(self) -> Union[int, None]:
         return self._result
 
     def game_ending_move(self, column: int) -> bool:

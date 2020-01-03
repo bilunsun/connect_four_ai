@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Any, List
+from typing import Any, List, Union
 
 
 class GameTemplate(ABC):
@@ -31,7 +31,7 @@ class GameTemplate(ABC):
         pass
 
     @abstractmethod
-    def result(self) -> int:
+    def result(self) -> Union[int, None]:
         pass
 
     def is_game_over(self) -> bool:
