@@ -14,6 +14,9 @@ class GameTemplate(ABC):
     BLACK = 0
     WHITE = 1
 
+    ROWS: int
+    COLUMNS: int
+
     @abstractmethod
     def __init__(self) -> None:
         pass
@@ -36,6 +39,9 @@ class GameTemplate(ABC):
 
     def is_game_over(self) -> bool:
         return self.result() is not None
+
+    def get_board_copy(self) -> List:
+        return [[player_row[:] for player_row in player_board[:]] for player_board in self._board]
 
     @abstractmethod
     def get_copy(self) -> Any:

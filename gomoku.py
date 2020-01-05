@@ -119,7 +119,7 @@ class Gomoku(GameTemplate):
 
     def get_copy(self) -> "Gomoku":
         copied_self = Gomoku()
-        copied_self._board = [[player_row[:] for player_row in player_board[:]] for player_board in self._board]
+        copied_self._board = self.get_board_copy()
         copied_self._turn = self._turn
         copied_self._result = self._result
         copied_self._pieces_count = self._pieces_count
