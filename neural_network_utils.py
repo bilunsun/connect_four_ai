@@ -1,3 +1,4 @@
+import numpy as np
 from typing import List, Tuple, Union
 
 from connect_four import ConnectFour
@@ -6,42 +7,36 @@ from gomoku import Gomoku
 from mcts import MCTS
 
 
-def generate_state_representation(game_state: GameTemplate) -> List:
+def generate_state_representation(game_state: GameTemplate) -> np.ndarray:
     """
     Generate a state representation for the neural network with planes
         White pieces location
         Black pieces location
         Player's turn
     """
-    board = game_state.get_board_copy()
-    turn = game_state.turn()
-
-    state_representation = []
-    state_representation.append(board[GameTemplate.WHITE])
-    state_representation.append(board[GameTemplate.BLACK])
-    state_representation.append([[turn for column in range(game_state.COLUMNS)] for row in range(game_state.ROWS)])
+    board_representation = np.array(game_state.get_board_copy())  # Is the get_board_copy() method needed?
+    turn_representation = np.full((game_state.ROWS, game_state.COLUMNS), game_state.turn())
+    state_representation = np.stack((board_representation[0], board_representation[1], turn_representation), axis=0)
 
     return state_representation
 
 
-def generate_policy_representation(game_state: GameTemplate, move: Union[int, Tuple[int, int]]) -> Union[List[int], List[List[int]]]:
-    policy: Union[List[int], List[List[int]]]
+def generate_policy_representation(game_state: GameTemplate, move: Union[int, Tuple[int, int]]) -> np.ndarray:
+    policy: np.ndarray
 
     if isinstance(game_state, ConnectFour):
-        assert isinstance(move, int)
-        policy = [0 for _ in range(ConnectFour.COLUMNS)]
+        policy = np.zeros(shape=ConnectFour.COLUMNS)
         policy[move] = 1
 
     if isinstance(game_state, Gomoku):
-        assert isinstance(move, Tuple[int, int])
-        policy = [[0 for column in range(Gomoku.COLUMNS)] for row in range(Gomoku.ROWS)]
+        policy = np.zeros(shape=(Gomoku.ROWS, Gomoku.COLUMNS))
         row, column = move
-        policy[row][column] = 1
+        policy[row, column] = 1
 
     return policy
 
 
-def generate_data(Game: GameTemplate) -> List:
+def generate_data(Game: GameTemplate) -> np.ndarray:
     """
     Player a game, and generate training data for the neural network
     """
@@ -50,7 +45,7 @@ def generate_data(Game: GameTemplate) -> List:
     white_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=5, debug=False)
     black_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=2, debug=False)
 
-    state_reprensetations: List= []
+    training_data: List[np.ndarray] = []
 
     # Play an entire game
     while not sample_state.is_game_over():
@@ -65,12 +60,24 @@ def generate_data(Game: GameTemplate) -> List:
 
         # For each move, save the state
         current_state_representation = generate_state_representation(sample_state)
-        current_policy_reprensentation = generate_policy_representation(sample_state, move)
-        state_reprensetations.append(current_state_representation)
+        current_policy_representation = generate_policy_representation(sample_state, move)
+
+        # Note that None will take the value of the terminal state's result
+        training_data.append([current_state_representation, current_policy_representation])
 
         sample_state.make_move(move)
 
     # At the end of the game, include the final outcome
-    pass
+    end_result = sample_state.result()
+    for data in training_data:
+        data.append(np.full((Game.ROWS, Game.COLUMNS), fill_value=end_result))
 
-    return state_reprensetations
+    return training_data
+
+
+def main():
+    print(generate_data(Game=Gomoku))
+
+
+if __name__ == "__main__":
+    main()
