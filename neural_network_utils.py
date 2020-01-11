@@ -36,7 +36,7 @@ def generate_policy_representation(game_state: GameTemplate, move: Union[int, Tu
     return policy
 
 
-def generate_data(Game: GameTemplate) -> np.ndarray:
+def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
     """
     Player a game, and generate training data for the neural network
     """
@@ -45,7 +45,7 @@ def generate_data(Game: GameTemplate) -> np.ndarray:
     white_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=5, debug=False)
     black_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=2, debug=False)
 
-    training_data: List[np.ndarray] = []
+    game_data: List[np.ndarray] = []
 
     # Play an entire game
     while not sample_state.is_game_over():
@@ -63,20 +63,46 @@ def generate_data(Game: GameTemplate) -> np.ndarray:
         current_policy_representation = generate_policy_representation(sample_state, move)
 
         # Note that None will take the value of the terminal state's result
-        training_data.append([current_state_representation, current_policy_representation])
+        game_data.append([current_state_representation, current_policy_representation])
 
         sample_state.make_move(move)
 
     # At the end of the game, include the final outcome
     end_result = sample_state.result()
-    for data in training_data:
-        data.append(np.full((Game.ROWS, Game.COLUMNS), fill_value=end_result))
+    end_result_representation = np.full((Game.ROWS, Game.COLUMNS), fill_value=end_result)
 
-    return training_data
+    return game_data, end_result_representation
+
+
+def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 2):
+    states = []
+    policies_and_values = []
+
+    for _ in range(number_of_games):
+        game_data, end_result_representation = generate_game_data(Game)
+
+        for snapshot in game_data:
+            state_representation, policy_representation = snapshot
+
+            states.append(state_representation)
+            policies_and_values.append((policy_representation, end_result_representation))
+
+    return states, policies_and_values
+
+
+def save_data_to_npy(data: Tuple[List, List]) -> None:
+    data = np.array(data)
+
+    np.save("test_data.npy", data)
 
 
 def main():
-    print(generate_data(Game=Gomoku))
+    data = generate_neural_network_data(Game=ConnectFour)
+    print(np.array(data).shape)
+    save_data_to_npy(data)
+
+    loaded_data = np.load("test_data.npy", allow_pickle=True)
+    print(loaded_data.shape)
 
 
 if __name__ == "__main__":

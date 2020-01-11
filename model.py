@@ -55,6 +55,7 @@ def residual_layer(input_block):
     x = Conv2D(filters=RESIDUAL_LAYER_PARAMETERS["filters"],
                kernel_size=RESIDUAL_LAYER_PARAMETERS["kernel_size"],
                padding=RESIDUAL_LAYER_PARAMETERS["padding"],
+               data_format="channels_first",
                kernel_regularizer=RESIDUAL_LAYER_PARAMETERS["kernel_regularizer"]
     )(input_block)
 
@@ -71,6 +72,7 @@ def convolutional_layer(input_block):
     x = Conv2D(filters=CONVOLUTIONAL_LAYER_PARAMETERS["filters"],
                kernel_size=CONVOLUTIONAL_LAYER_PARAMETERS["kernel_size"],
                padding=CONVOLUTIONAL_LAYER_PARAMETERS["padding"],
+               data_format="channels_first",
                kernel_regularizer=CONVOLUTIONAL_LAYER_PARAMETERS["kernel_regularizer"]
     )(input_block)
 
@@ -85,6 +87,7 @@ def policy_head(input_block):
     x = Conv2D(filters=POLICY_HEAD_CONV_PARAMETERS["filters"],
                kernel_size=POLICY_HEAD_CONV_PARAMETERS["kernel_size"],
                padding=POLICY_HEAD_CONV_PARAMETERS["padding"],
+               data_format="channels_first",
                kernel_regularizer=POLICY_HEAD_CONV_PARAMETERS["kernel_regularizer"]
     )(input_block)
 
@@ -103,6 +106,7 @@ def value_head(input_block):
     x = Conv2D(filters=VALUE_HEAD_CONV_PARAMETERS["filters"],
                kernel_size=VALUE_HEAD_CONV_PARAMETERS["kernel_size"],
                padding=VALUE_HEAD_CONV_PARAMETERS["padding"],
+               data_format="channels_first",
                kernel_regularizer=VALUE_HEAD_CONV_PARAMETERS["kernel_regularizer"]
     )(input_block)
 
@@ -122,7 +126,7 @@ def value_head(input_block):
 
 
 def build_model() -> Model:
-    network_input = Input(shape=(6, 7, 3), name="network_input")
+    network_input = Input(shape=(3, 6, 7), name="network_input")
 
     x = convolutional_layer(network_input)
 
