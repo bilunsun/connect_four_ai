@@ -74,7 +74,7 @@ def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
     return game_data, end_result_representation
 
 
-def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 2):
+def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 1):
     states = []
     policies_and_values = []
 
@@ -96,13 +96,19 @@ def save_data_to_npy(data: Tuple[List, List]) -> None:
     np.save("test_data.npy", data)
 
 
+def load_npy_data(path: str = "test_data.npy"):
+    states, policies_and_values = np.load(path, allow_pickle=True)
+
+    return states, policies_and_values
+
+
 def main():
     data = generate_neural_network_data(Game=ConnectFour)
     print(np.array(data).shape)
     save_data_to_npy(data)
 
-    loaded_data = np.load("test_data.npy", allow_pickle=True)
-    print(loaded_data.shape)
+    states, policies_and_values = load_npy_data()
+    print(len(states), len(policies_and_values))
 
 
 if __name__ == "__main__":
