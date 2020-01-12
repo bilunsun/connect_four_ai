@@ -42,7 +42,7 @@ def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
     """
     sample_state: GameTemplate = Game()
 
-    white_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=5, debug=False)
+    white_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=5, debug=True)
     black_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=2, debug=False)
 
     game_data: List[np.ndarray] = []
@@ -69,14 +69,14 @@ def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
 
     # At the end of the game, include the final outcome
     end_result = sample_state.result()
-    end_result_representation = np.full((Game.ROWS, Game.COLUMNS), fill_value=end_result)
 
-    return game_data, end_result_representation
+    return game_data, end_result
 
 
-def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 1):
+def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 100):
     states = []
-    policies_and_values = []
+    policies = []
+    values = []
 
     for _ in range(number_of_games):
         game_data, end_result_representation = generate_game_data(Game)
@@ -85,30 +85,30 @@ def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 1):
             state_representation, policy_representation = snapshot
 
             states.append(state_representation)
-            policies_and_values.append((policy_representation, end_result_representation))
+            policies.append(policy_representation)
+            values.append(end_result_representation)
 
-    return states, policies_and_values
+    return states, policies, values
 
 
 def save_data_to_npy(data: Tuple[List, List]) -> None:
-    data = np.array(data)
-
     np.save("test_data.npy", data)
 
 
 def load_npy_data(path: str = "test_data.npy"):
-    states, policies_and_values = np.load(path, allow_pickle=True)
+    states, policies, values = np.load(path, allow_pickle=True)
 
-    return states, policies_and_values
+    return np.array(states.tolist()), np.array(policies.tolist()), np.array(values.tolist())
 
 
 def main():
     data = generate_neural_network_data(Game=ConnectFour)
-    print(np.array(data).shape)
     save_data_to_npy(data)
+    print("SAVED")
 
-    states, policies_and_values = load_npy_data()
-    print(len(states), len(policies_and_values))
+    states, policies, values = load_npy_data()
+    print("LOADED")
+    print(len(states), len(policies), len(values))
 
 
 if __name__ == "__main__":

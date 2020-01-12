@@ -28,7 +28,7 @@ POLICY_HEAD_CONV_PARAMETERS = {
 }
 
 POLICY_HEAD_DENSE_PARAMETERS = {
-    "units": 42,  # For ConnectFour, 6 rows * 7 columns
+    "units": 7,  # For ConnectFour, 7 columns
     "name": "policy_head"
 }
 
@@ -136,7 +136,7 @@ def build_model() -> Model:
     value = value_head(x)
     policy = policy_head(x)
 
-    model = Model(inputs=[network_input], outputs=[value, policy])
+    model = Model(inputs=[network_input], outputs=[policy, value])
     model.compile(
         loss={
             "value_head": "mean_squared_error",
