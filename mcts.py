@@ -179,15 +179,38 @@ class MCTS:
         return best_node.move
 
     def make_opponent_move(self, opponent_move) -> None:
-        if len(self.root_node.child_nodes) == 0:  # If this is the first move
+        if not self.root_node.child_nodes:  # If this is the first move
             self.root_node.state.make_move(opponent_move)
             self.root_node.untried_moves = self.root_node.state.legal_moves
             return
 
-        for child_node in self.root_node.child_nodes:
-            if child_node.move == opponent_move:
-                self.root_node = child_node
-                break
+        target_node = None
+        index_tracker = 0
+
+        print("Before deletion:", self.root_node.descendants_count())
+
+        while len(self.root_node.child_nodes) > 1:
+            if self.root_node.child_nodes[index_tracker].move == opponent_move:
+                target_node = self.root_node.child_nodes[index_tracker]
+                index_tracker += 1
+            else:
+                self._delete_subtree(self.root_node.child_nodes[index_tracker])
+                del self.root_node.child_nodes[index_tracker]
+
+        print("After deletion", self.root_node.descendants_count())
+
+        self.root_node = target_node
+
+
+    def _delete_subtree(self, subtree_root_node: Node) -> None:
+        """
+        Delete a subtree using recursion, by settings all of the children nodes to None
+        """
+        # As long as the target node has children nodes, keep deleting them recursively
+        # Then delete the child node itself
+        while subtree_root_node.child_nodes:
+            self._delete_subtree(subtree_root_node.child_nodes[0])
+            del subtree_root_node.child_nodes[0]
 
 
 def play_sample_game(Game: Union[ConnectFour, Gomoku]) -> int:
