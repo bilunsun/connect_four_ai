@@ -98,6 +98,48 @@ class Model(nn.Module):
         return x
 
 
+def train_model(model: nn.Module,
+                train_data: torch.Tensor,
+                epochs=10,
+                batch_size=64,
+                learning_rate=0.001,
+                print_stats_every=200) -> None:
+    # Define two losses: one for the policy head; one for the value head
+    policy_criterion = nn.CrossEntropyLoss()
+    value_criterion = nn.MSELoss()
+
+    # Define an optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+    # Train for the specified number of epochs
+    for epoch in range(epochs):
+        # Keep track of the running loss
+        running_loss = 0.0
+
+        # Train over the minibatches
+        for minibatch_index, (x, (target_policies, target_values)) in enumerate(train_data):
+            # Reset the gradients every batch
+            optimizer.zero_grad()
+
+            # Feed forward, backpropagation and optimize
+            predicted_policies, predicted_values = model(x)
+
+            policy_loss = policy_criterion(input=predicted_policies, target=target_policies)
+            value_loss = value_criterion(input=predicted_values, target=target_values)
+            loss = policy_loss + value_loss
+
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+
+            # Print stats at regular intervals to monitor the training
+            if not minibatch_index % print_stats_every:
+                print(f"[{epoch}, {minibatch_index}] loss: {running_loss / print_stats_every}")
+
+                running_loss = 0.0
+
+
 def main():
     model = Model()
 
