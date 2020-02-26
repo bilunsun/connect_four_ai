@@ -105,7 +105,7 @@ def train_model(model: nn.Module,
                 learning_rate: float = 0.001,
                 print_stats_every: int = 200) -> None:
     # Define two losses: one for the policy head; one for the value head
-    policy_criterion = nn.CrossEntropyLoss()
+    policy_criterion = nn.MSELoss()
     value_criterion = nn.MSELoss()
 
     # Define an optimizer
@@ -138,6 +138,8 @@ def train_model(model: nn.Module,
                 print(f"[{epoch}, {minibatch_index}] loss: {running_loss / print_stats_every}")
 
                 running_loss = 0.0
+
+    print("Done.")
 
 
 def main():
