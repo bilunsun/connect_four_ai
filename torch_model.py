@@ -100,16 +100,16 @@ class Model(nn.Module):
 
 def train_model(model: nn.Module,
                 train_data: torch.Tensor,
-                epochs=10,
-                batch_size=64,
-                learning_rate=0.001,
-                print_stats_every=200) -> None:
+                epochs: int = 10,
+                batch_size: int = 64,
+                learning_rate: float = 0.001,
+                print_stats_every: int = 200) -> None:
     # Define two losses: one for the policy head; one for the value head
     policy_criterion = nn.CrossEntropyLoss()
     value_criterion = nn.MSELoss()
 
     # Define an optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate)
 
     # Train for the specified number of epochs
     for epoch in range(epochs):
