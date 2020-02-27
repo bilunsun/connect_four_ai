@@ -184,20 +184,25 @@ class MCTS:
             self.root_node.untried_moves = self.root_node.state.legal_moves
             return
 
-        target_node = None
-        index_tracker = 0
+        for child_node in self.root_node.child_nodes:
+            if child_node.move == opponent_move:
+                self.root_node = child_node
+                return
 
-        print("Before deletion:", self.root_node.descendants_count())
+        # target_node = None
+        # index_tracker = 0
 
-        while len(self.root_node.child_nodes) > 1:
-            if self.root_node.child_nodes[index_tracker].move == opponent_move:
-                target_node = self.root_node.child_nodes[index_tracker]
-                index_tracker += 1
-            else:
-                self._delete_subtree(self.root_node.child_nodes[index_tracker])
-                del self.root_node.child_nodes[index_tracker]
+        # print("Before deletion:", self.root_node.descendants_count())
 
-        print("After deletion", self.root_node.descendants_count())
+        # while len(self.root_node.child_nodes) > 1:
+        #     if self.root_node.child_nodes[index_tracker].move == opponent_move:
+        #         target_node = self.root_node.child_nodes[index_tracker]
+        #         index_tracker += 1
+        #     else:
+        #         self._delete_subtree(self.root_node.child_nodes[index_tracker])
+        #         del self.root_node.child_nodes[index_tracker]
+
+        # print("After deletion", self.root_node.descendants_count())
 
         self.root_node = target_node
 
@@ -256,7 +261,7 @@ def main():
     for i in range(1):
         print(i)
 
-        sample_result = play_sample_game(Gomoku)
+        sample_result = play_sample_game(ConnectFour)
 
         results[sample_result] += 1
 

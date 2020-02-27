@@ -42,8 +42,8 @@ def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
     """
     sample_state: GameTemplate = Game()
 
-    white_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=5, debug=True)
-    black_mcts = MCTS(root_state=sample_state, itermax=800, timeout_s=2, debug=False)
+    white_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=2, debug=False)
+    black_mcts = MCTS(root_state=sample_state, itermax=1600, timeout_s=2, debug=False)
 
     game_data: List[np.ndarray] = []
 
@@ -73,12 +73,13 @@ def generate_game_data(Game: GameTemplate) -> Tuple[np.ndarray, np.ndarray]:
     return game_data, end_result
 
 
-def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 100):
+def generate_neural_network_data(Game: GameTemplate, number_of_games: int = 1000):
     states = []
     policies = []
     values = []
 
     for _ in range(number_of_games):
+        print(_)
         game_data, end_result_representation = generate_game_data(Game)
 
         for snapshot in game_data:
