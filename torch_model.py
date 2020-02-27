@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class Model(nn.Module):
-    def __init__(self, residual_layers_count=8, hidden_state_dim=16, value_fc_dim=128):
+    def __init__(self, residual_layers_count=20, hidden_state_dim=64, value_fc_dim=128):
         super(Model, self).__init__()
 
         # Parameters
